@@ -1,39 +1,46 @@
 # lake-connector
 
-A PySpark-based connector for machine learning workflows that read distributed
-columnar Data Lake files (for example, Parquet) and convert them into
-`pandas.DataFrame`.
+`lake-connector` is a PySpark-based toolkit for machine learning data access in
+distributed Data Lake environments. It focuses on reading columnar files (for
+example, Parquet), applying distributed preprocessing, and converting curated
+results into `pandas.DataFrame` for downstream analytics and modeling.
 
-## Design Goals
+## Abstract
 
-- Support distributed storage URIs, such as `s3a://`, `hdfs://`, and `abfss://`.
-- Use Spark for scalable read/transform operations.
-- Provide safe Spark-to-pandas conversion with explicit row guards.
-- Include distributed categorical encoding with Spark ML.
-- Keep package structure clean and reusable for open-source collaboration.
+Large-scale feature pipelines often require both distributed data processing and
+local model experimentation. This project provides a practical bridge: Spark is
+used for scalable I/O and transformation, while pandas is used for local ML
+workflows. The implementation introduces explicit memory-safety controls before
+collecting distributed data to local runtime.
 
-## Project Structure
+## Key Features
 
-```text
-lake-connector/
-  examples/
-    read_and_encode.py
-  src/
-    lake_connector/
-      __init__.py
-      config.py
-      spark_session.py
-      reader.py
-      distributed_encoder.py
-      pipeline.py
-  pyproject.toml
-```
+- Distributed Parquet reading with Spark (`s3a://`, `hdfs://`, `abfss://`, and local paths).
+- Column projection and SQL-style filtering for efficient data reduction.
+- Guarded Spark-to-pandas conversion with configurable row limits.
+- Optional sampling before collection to support exploratory analysis.
+- Distributed categorical encoding via Spark ML (`StringIndexer` + `OneHotEncoder`).
 
-## Installation
+## Methodological Notes
+
+- **Processing model**: Execute I/O and feature encoding in Spark executors.
+- **Collection policy**: Convert to pandas only after row-bound validation.
+- **Reproducibility**: Sampling supports deterministic behavior with a fixed seed.
+- **Extensibility**: Core API is modular (`reader`, `encoder`, and `pipeline` layers).
+
+## Requirements
+
+- Python `>=3.10`
+- Apache Spark / PySpark `>=3.5.0`
+- pandas `>=2.0.0`
+
+## Installation and Setup
 
 ```bash
 pip install -e .
 ```
+
+Optional: configure object storage and Spark runtime through `SparkConfig.extra_conf`.
 
 ## Quick Start
 
@@ -59,7 +66,7 @@ finally:
     reader.stop()
 ```
 
-## Distributed Encoding
+## Distributed Encoding Example
 
 Use `DistributedFeatureEncoder` to encode categorical features in Spark:
 
@@ -72,8 +79,20 @@ encoded_df = encoder.fit_transform(spark_df)
 pdf = reader.to_pandas(encoded_df, sample_ratio=0.1)
 ```
 
-## Open-Source Notes
+## Reproducibility and Data Governance
 
-- Code includes English docstrings and comments for cross-team collaboration.
-- Keep data access credentials outside source code (environment variables or secret managers).
-- Add tests and CI checks before production deployment.
+- Keep credentials outside source code (environment variables or secret managers).
+- Record storage URI, Spark configuration, and sampling parameters in experiments.
+- Use schema validation and row-level sanity checks before model training.
+
+## Open-Source Compliance
+
+- License: MIT (see `LICENSE`).
+- Source code follows typed, modular Python package conventions.
+- English docstrings/comments are used for international collaboration.
+- Contributions should include tests and clear rationale in pull requests.
+
+## Citation (Recommended)
+
+If this project contributes to academic or industrial reports, cite the
+repository and include the commit hash used in experiments for traceability.
